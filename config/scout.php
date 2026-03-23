@@ -1,30 +1,14 @@
 <?php
 
 return [
-
-
     'driver' => env('SCOUT_DRIVER', 'collection'),
-
-
     'prefix' => env('SCOUT_PREFIX', ''),
-
-
-
     'queue' => env('SCOUT_QUEUE', false),
-
-
-
     'after_commit' => false,
-
-
-
     'chunk' => [
         'searchable' => 500,
         'unsearchable' => 500,
     ],
-
-
-
     'soft_delete' => false,
 
 
@@ -39,27 +23,15 @@ return [
         'index-settings' => [],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Meilisearch Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure your Meilisearch settings. Meilisearch is an open
-    | source search engine with minimal configuration. Below, you can state
-    | the host and key information for your own Meilisearch installation.
-    |
-    | See: https://www.meilisearch.com/docs/learn/configuration/instance_options#all-instance-options
-    |
-    */
 
     'meilisearch' => [
         'host' => env('MEILISEARCH_HOST', 'http://localhost:7700'),
         'key' => env('MEILISEARCH_KEY', null),
 
-      
+
         'index-settings' => [
             \App\Models\News::class => [
-   
+
                 'searchableAttributes' => [
                     'title',       // Ưu tiên 1: Trùng tiêu đề là top 1
                     'short',       // Ưu tiên 2: Trùng mô tả ngắn
@@ -67,7 +39,7 @@ return [
                 ],
                 // (Tùy chọn) Luật xếp hạng mặc định của Meilisearch, cứ để nguyên
                 'filterableAttributes' => [
-                    'cat_id',      
+                    'cat_id',
                 ],
                 'rankingRules' => [
                     'words',      // Ưu tiên bài chứa nhiều từ khóa nhất

@@ -2,37 +2,33 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use MongoDB\Laravel\Eloquent\Model;
 
 class Comment extends Model
 {
     use HasFactory;
-    protected $table      = 'comment';
-    protected $primaryKey = 'comment_id';
+    protected $connection = 'mongodb';
+    protected $collection = 'comments';
     protected $fillable   = [
-        'post_id',
-        'parentid',
-        'mem_id', 'name', 'email', 'content', 'picture', 'mark', 'address_IP',
-        'display', 'date_post', 'date_update', 'adminid', 'phone',
+        'news_id',
+        'member_id',
+        'content',
+        'parent_id',
+        'root_id',
     ];
+    public function news()
+    {
+        return $this->belongsTo(News::class, 'news_id', 'news_id');
+    }
+    public function member()
+    {
+        return $this->belongsTo(Member::class, 'member_id', 'id');
+    }
+    public function allReplies()
+    {
+        return $this->hasMany(Comment::class, 'root_id', '_id')->with('member');
+    }
 
     public $timestamps = true;
 
-    public function member()
-    {
-        return $this->belongsTo(Member::class, 'mem_id', 'mem_id');
-    }
-
-    public function subcomments()
-    {
-        return $this->hasMany(Comment::class, 'parentid', 'comment_id');
-    }
-    public function productDesc()
-    {
-        return $this->hasOne(ProductDesc::class, 'product_id', 'post_id')->select('product_id', 'title', 'friendly_url');
-    }
-    // public function newsDesc()
-    // {
-    //     return $this->hasOne( NewsDesc::class, 'news_id', 'post_id' );
-    // }
 }

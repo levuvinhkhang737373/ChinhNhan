@@ -1,4 +1,4 @@
-# Sử dụng image PHP 8.2 FPM (bạn có thể đổi version cho phù hợp với dự án)
+# Sử dụng image PHP 8.2 FPM
 FROM php:8.2-fpm
 
 # Cài đặt các thư viện hệ thống cần thiết
@@ -10,6 +10,16 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip
+# cài đặt các thư viện monggodb
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    pkg-config \
+    libssl-dev
+
+# Tải và bật extension MongoDB cho PHP
+RUN pecl install mongodb \
+    && docker-php-ext-enable mongodb
+
 
 # Xóa cache để giảm dung lượng image
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -21,10 +31,10 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Thiết lập thư mục làm việc
-WORKDIR /var/www//html
+WORKDIR /var/www/html
 
 # Copy toàn bộ code vào container (tùy chọn, thường dùng khi deploy)
-COPY . /var/www//html
+COPY . /var/www/html
 
 # Cấp quyền cho thư mục (để tránh lỗi permission denied)
-RUN chown -R www-data:www-data /var/www//html
+RUN chown -R www-data:www-data /var/www/html

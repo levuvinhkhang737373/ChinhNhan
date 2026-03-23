@@ -5,10 +5,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/news', [App\Http\Controllers\Member\PostController::class, 'index']);
 Route::get('/categorynews', [App\Http\Controllers\Member\CategoryNewsController::class, 'index']);
-Route::get('/news/top-by-category', [App\Http\Controllers\Member\PostController::class, 'getTopNewsPerCategory']);
 Route::get('/listcategory', [App\Http\Controllers\Member\CategoryNewsController::class, 'listCategoryDisplayTrue']);
-Route::get('/news/{friendly_url}', [App\Http\Controllers\Member\PostController::class, 'show']);
 Route::get('/searchnews', [App\Http\Controllers\Member\PostController::class, 'searchNews']);
+Route::get('/news/top-interactive', [App\Http\Controllers\Member\PostController::class, 'TopInteractiveNewsPerCategory']);
+Route::get('/news/{friendly_url}', [App\Http\Controllers\Member\PostController::class, 'show']);
+
 
 //---------------------------------------Auth Member
 Route::post('/member/login', [App\Http\Controllers\Member\MemberController::class, 'login']);
@@ -23,6 +24,7 @@ Route::middleware('auth:member')->prefix('member')->group(function () {
     Route::get('/notifications/unread-count', [App\Http\Controllers\Member\NotificationContronler::class, 'getUnreadCount']);
     Route::get('/notifications', [App\Http\Controllers\Member\NotificationContronler::class, 'index']);
     Route::post('/notifications/{id}/mark-as-read', [App\Http\Controllers\Member\NotificationContronler::class, 'markAsRead']);
+    Route::resource('comment', App\Http\Controllers\Member\CommentController::class);
 });
 
 //--------------------------------------- Admin ---------------------------------------

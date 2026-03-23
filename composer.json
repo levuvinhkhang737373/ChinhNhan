@@ -10,10 +10,12 @@
         "http-interop/http-factory-guzzle": "^1.2",
         "laravel/framework": "^12.0",
         "laravel/passport": "^13.5",
+        "laravel/reverb": "^1.8",
         "laravel/sanctum": "^4.0",
         "laravel/scout": "^11.1",
         "laravel/tinker": "^2.10.1",
         "meilisearch/meilisearch-php": "^1.16",
+        "mongodb/laravel-mongodb": "^5.7",
         "predis/predis": "^3.4",
         "spatie/laravel-activitylog": "^4.12"
     },

@@ -1,22 +1,23 @@
 <?php
-
 namespace App\Models;
 
 use App\Models\Address;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Passport\HasApiTokens;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Contracts\Activity;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Passport\HasApiTokens;
+use MongoDB\Laravel\Eloquent\HybridRelations;
+use Spatie\Activitylog\Contracts\Activity;
+use Spatie\Activitylog\LogOptions;
+//sử dụng mongo
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Member extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, LogsActivity;
-
-    protected $table = 'members';
+    use HasApiTokens, HasFactory, Notifiable, LogsActivity, HybridRelations;
+    protected $connection = 'mysql';
+    protected $table      = 'members';
 
     protected $primaryKey = 'id';
 
@@ -44,7 +45,7 @@ class Member extends Authenticatable
         'ward',
         'district',
         'city_province',
-        'password_token'
+        'password_token',
     ];
 
     protected $hidden = [
@@ -74,6 +75,10 @@ class Member extends Authenticatable
     {
         return $this->belongsToMany(News::class, 'member_news_views');
     }
+    public function comments()
+    {
+        return $this->hasMany(Comment::class, 'member_id', 'id');
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -87,14 +92,14 @@ class Member extends Authenticatable
     public function tapActivity(Activity $activity, string $eventName)
     {
         if (Auth::guard('admin')->check()) {
-            $admin = Auth::guard('admin')->user();
+            $admin                 = Auth::guard('admin')->user();
             $activity->causer_type = get_class($admin);
-            $activity->causer_id = $admin->id;
+            $activity->causer_id   = $admin->id;
         }
 
         $activity->properties = $activity->properties->merge([
             'ip_address' => request()->ip(),
-            'user_agent' => request()->header('User-Agent')
+            'user_agent' => request()->header('User-Agent'),
         ]);
     }
 }

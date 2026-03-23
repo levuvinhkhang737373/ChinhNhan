@@ -8,13 +8,13 @@ use App\Http\Resources\PostResource;
 use App\Models\Member;
 use App\Models\News;
 use App\Models\NewsDesc;
-use App\Models\Notification;
-use Illuminate\Support\Facades\Notification as NotificationFacade;
 use App\Notifications\NewPostNotification;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 
 class PostController extends Controller
 {
@@ -45,7 +45,7 @@ class PostController extends Controller
             }
             $post = DB::transaction(function () use ($data, $picture) {
                 $catListString = implode(',', $data['cat_list'] ?? []);
-                $news = News::create([
+                $news          = News::create([
                     'cat_id'      => $data['cat_id'],
                     'cat_list'    => $catListString,
                     'picture'     => $picture,
@@ -70,6 +70,8 @@ class PostController extends Controller
             $post->load('newsDesc');
             $members = Member::all();
             NotificationFacade::send($members, new NewPostNotification($post));
+            Cache::forget('top_news_categories_views');
+            Cache::forget('top_news_categories_comments');
             return $this->responseJson(true, "Thêm thành công!", 201, new PostResource($post), 201);
         } catch (\Exception $e) {
             if ($picture) {
@@ -79,7 +81,6 @@ class PostController extends Controller
             return $this->responseJson(false, "Server Error: " . $e->getMessage(), 500, "", 500);
         }
     }
-
 
     public function show(string $id)
     {
@@ -124,6 +125,8 @@ class PostController extends Controller
                 );
             });
             $news->load('newsDesc');
+            Cache::forget('top_news_categories_views');
+            Cache::forget('top_news_categories_comments');
             return $this->responseJson(true, "Cập nhật thành công!", 200, new PostResource($news), 200);
         } catch (\Exception $e) {
             report($e);
@@ -140,6 +143,8 @@ class PostController extends Controller
                 $news->delete();
             });
             deleteImage($picture);
+            Cache::forget('top_news_categories_views');
+            Cache::forget('top_news_categories_comments');
             return $this->responseJson(true, "Xóa thành công!", 200, "", 200);
         } catch (\Exception $e) {
             report($e);
@@ -164,6 +169,8 @@ class PostController extends Controller
                     deleteImage($picture);
                 }
             }
+            Cache::forget('top_news_categories_views');
+            Cache::forget('top_news_categories_comments');
             return $this->responseJson(true, "Xóa thành công!", 200, "", 200);
         } catch (\Throwable $e) {
             report($e);

@@ -9,6 +9,7 @@ use App\Models\StatisticsPages;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -75,38 +76,6 @@ class PostController extends Controller
         }
     }
 
-    public function getTopNewsPerCategory()
-    {
-        try {
-            $categories = DB::table('news_category as nc')
-                ->join('news_category_desc as ncd', 'nc.cat_id', '=', 'ncd.cat_id')
-                ->where('nc.display', 1)
-                ->select('nc.cat_id', 'ncd.cat_name', 'nc.display')
-                ->get();
-
-            foreach ($categories as $category) {
-                $category->news = DB::table('news as n')
-                    ->join('news_desc as nd', 'n.news_id', '=', 'nd.news_id')
-                    ->where('n.cat_id', $category->cat_id)
-                    ->select(
-                        'nd.news_id',
-                        'nd.title',
-                        'nd.description',
-                        'nd.short',
-                        'n.views'
-                    )
-                    ->orderByDesc('n.views')
-                    ->latest('n.news_id')
-                    ->limit(5)
-                    ->get();
-            }
-            return $this->responseJson(true, "Lấy danh sách thành công", 200, $categories, 200);
-        } catch (\Exception $e) {
-            return $this->responseJson(false, $e->getMessage(), 500, "", 500);
-        }
-    }
-
-    
     public function searchNews(Request $request)
     {
         try {
@@ -114,14 +83,79 @@ class PostController extends Controller
             if (! $keyword) {
                 return $this->responseJson(false, "Vui lòng nhập từ khóa", 400, null, 400);
             }
-            $results = \App\Models\News::search($keyword)
-                        ->where('display', 1) 
-                        ->query(fn ($query) => $query->with('newsDesc')) 
-                        ->get();
+            $results = News::search($keyword)
+                ->where('display', 1)
+                ->query(fn($query) => $query->with('newsDesc'))
+                ->get();
             return $this->responseJson(true, "Tìm kiếm thành công", 200, $results, 200);
         } catch (\Exception $e) {
             report($e);
             return $this->responseJson(false, "Lỗi tìm kiếm: " . $e->getMessage(), 500, "", 500);
+        }
+    }
+
+    public function TopInteractiveNewsPerCategory(Request $request)
+    {
+        try {
+            $sortBy   = $request->query('sort_by', 'views');
+            $cacheKey = "top_news_categories_{$sortBy}";
+            $result   = Cache::remember($cacheKey, now()->endOfDay(), function () {
+                $commentSub = DB::table('comment')
+                    ->where('display', 1)
+                    ->select('post_id', DB::raw('COUNT(comment_id) as total_comments'))
+                    ->groupBy('post_id');
+                $scoreRaw   = "((n.views * 1) + (COALESCE(cmt.total_comments, 0) * 10)) / (GREATEST(TIMESTAMPDIFF(HOUR, n.created_at, NOW()), 0) + 2)";
+                $rankedNews = DB::table('news as n')
+                    ->join('news_desc as nd', 'n.news_id', '=', 'nd.news_id')
+                    ->leftJoinSub($commentSub, 'cmt', function ($join) {
+                        $join->on('n.news_id', '=', 'cmt.post_id');
+                    })
+                    ->select(
+                        'n.cat_id',
+                        'n.news_id',
+                        'nd.title',
+                        'nd.short',
+                        'nd.friendly_url',
+                        'n.views',
+                        'n.created_at',
+                        DB::raw('COALESCE(cmt.total_comments, 0) as total_comments'),
+                        DB::raw("($scoreRaw) as interaction_score"),
+                        DB::raw("ROW_NUMBER() OVER(PARTITION BY n.cat_id ORDER BY ($scoreRaw) DESC) as rank_num")
+                    );
+                $flatData = DB::table('news_category as ncate')
+                    ->join('news_category_desc as ncatedesc', 'ncate.cat_id', '=', 'ncatedesc.cat_id')
+                    ->joinSub($rankedNews, 'ranked', function ($join) {
+                        $join->on('ncate.cat_id', '=', 'ranked.cat_id')
+                            ->where('ranked.rank_num', '<=', 5);
+                    })
+                    ->where('ncate.display', 1)
+                    ->select('ncate.cat_id', 'ncatedesc.cat_name', 'ranked.*')
+                    ->orderBy('ncate.cat_id')
+                    ->orderByDesc('ranked.interaction_score')
+                    ->get();
+                return $flatData->groupBy('cat_id')->map(function ($group) {
+                    $first = $group->first();
+                    return [
+                        'cat_id'   => $first->cat_id,
+                        'cat_name' => $first->cat_name,
+                        'posts'    => $group->map(function ($post) {
+                            return [
+                                'news_id'        => $post->news_id,
+                                'title'          => $post->title,
+                                'short'          => $post->short ?? '',
+                                'friendly_url'   => $post->friendly_url,
+                                'views'          => $post->views,
+                                'total_comments' => (int) $post->total_comments,
+                                'score'          => round($post->interaction_score, 4),
+                                'created_at'     => $post->created_at,
+                            ];
+                        })->values()->all(),
+                    ];
+                })->values()->toArray();
+            });
+            return $this->responseJson(true, "Lấy tin hot trong ngày thành công", 200, $result, 200);
+        } catch (\Exception $e) {
+            return $this->responseJson(false, "Lỗi Server: " . $e->getMessage(), 500, "", 500);
         }
     }
 }
