@@ -4,19 +4,18 @@ namespace App\Events;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class CommentDeleted implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, InteractsWithSockets;
     public $comment;
     public $news_id;
-    public function __construct($comment,$news_id)
+    public function __construct($comment, $news_id)
     {
-        $this->comment=$comment;
-        $this->news_id=$news_id;
+        $this->comment = $comment;
+        $this->news_id = $news_id;
     }
     public function broadcastOn()
     {

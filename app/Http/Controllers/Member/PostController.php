@@ -100,16 +100,9 @@ class PostController extends Controller
             $sortBy   = $request->query('sort_by', 'views');
             $cacheKey = "top_news_categories_{$sortBy}";
             $result   = Cache::remember($cacheKey, now()->endOfDay(), function () {
-                $commentSub = DB::table('comment')
-                    ->where('display', 1)
-                    ->select('post_id', DB::raw('COUNT(comment_id) as total_comments'))
-                    ->groupBy('post_id');
-                $scoreRaw   = "((n.views * 1) + (COALESCE(cmt.total_comments, 0) * 10)) / (GREATEST(TIMESTAMPDIFF(HOUR, n.created_at, NOW()), 0) + 2)";
+                $scoreRaw   = "((n.views * 1) + (n.comment_count * 3)) / (GREATEST(TIMESTAMPDIFF(HOUR, n.created_at, NOW()), 0) + 2)";
                 $rankedNews = DB::table('news as n')
                     ->join('news_desc as nd', 'n.news_id', '=', 'nd.news_id')
-                    ->leftJoinSub($commentSub, 'cmt', function ($join) {
-                        $join->on('n.news_id', '=', 'cmt.post_id');
-                    })
                     ->select(
                         'n.cat_id',
                         'n.news_id',
@@ -117,11 +110,12 @@ class PostController extends Controller
                         'nd.short',
                         'nd.friendly_url',
                         'n.views',
+                        'n.comment_count',
                         'n.created_at',
-                        DB::raw('COALESCE(cmt.total_comments, 0) as total_comments'),
                         DB::raw("($scoreRaw) as interaction_score"),
                         DB::raw("ROW_NUMBER() OVER(PARTITION BY n.cat_id ORDER BY ($scoreRaw) DESC) as rank_num")
-                    );
+                    )
+                    ->where('n.display', 1);
                 $flatData = DB::table('news_category as ncate')
                     ->join('news_category_desc as ncatedesc', 'ncate.cat_id', '=', 'ncatedesc.cat_id')
                     ->joinSub($rankedNews, 'ranked', function ($join) {
@@ -145,7 +139,7 @@ class PostController extends Controller
                                 'short'          => $post->short ?? '',
                                 'friendly_url'   => $post->friendly_url,
                                 'views'          => $post->views,
-                                'total_comments' => (int) $post->total_comments,
+                                'total_comments' => (int) $post->comment_count,
                                 'score'          => round($post->interaction_score, 4),
                                 'created_at'     => $post->created_at,
                             ];

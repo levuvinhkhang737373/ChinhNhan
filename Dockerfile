@@ -34,7 +34,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copy toàn bộ code vào container (tùy chọn, thường dùng khi deploy)
-COPY . /var/www/html
+# COPY . /var/www/html
 
 # Cấp quyền cho thư mục (để tránh lỗi permission denied)
 RUN chown -R www-data:www-data /var/www/html
+
+# redis
+
+

@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Khang Realtime - Fixed news_id</title>
+    <title>Khang Realtime - Comment System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pusher/8.3.0/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
     <style>
@@ -12,13 +12,13 @@
         .comment-root { border-bottom: 1px solid #eee; padding: 15px 0; animation: fadeIn 0.4s ease-in-out; transition: all 0.5s; overflow: hidden; }
         .comment-main { display: flex; align-items: flex-start; gap: 12px; }
         .avatar { width: 40px; height: 40px; background: #3578E5; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
-        .content-box { background: #f1f2f6; padding: 10px 15px; border-radius: 18px; position: relative; transition: background 0.8s; }
+        .content-box { background: #f1f2f6; padding: 10px 15px; border-radius: 18px; position: relative; transition: background 0.5s; }
         .user-name { font-weight: bold; font-size: 0.9em; color: #1c1e21; display: block; }
         .text { font-size: 0.95em; margin-top: 2px; color: #050505; }
         .edited-tag { color: #888; font-size: 0.75em; font-style: italic; margin-left: 5px; }
         .reply-list { margin-left: 52px; border-left: 2px solid #ddd; padding-left: 15px; margin-top: 10px; }
         .reply-item { margin-bottom: 8px; animation: fadeIn 0.3s ease; transition: all 0.5s; overflow: hidden; }
-        .reply-content { background: #e4e6eb; padding: 8px 12px; border-radius: 15px; display: inline-block; font-size: 0.9em; transition: background 0.8s; }
+        .reply-content { background: #e4e6eb; padding: 8px 12px; border-radius: 15px; display: inline-block; font-size: 0.9em; transition: background 0.5s; }
         .mention { color: #0095f6; font-weight: bold; margin-right: 4px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -30,18 +30,17 @@
     <div id="status" style="background: #fff3e0; color: #e65100;">⏳ Đang khởi tạo...</div>
 
     <div id="comment-container">
-        <p id="empty-msg" style="color: #888; text-align: center;">Chưa có bình luận. Dùng ?news_id=... trên URL</p>
+        <p id="empty-msg" style="color: #888; text-align: center;">Chưa có bình luận. Hãy dùng ?news_id=... trên URL</p>
     </div>
 </div>
 
 <script>
-    // 1. Lấy news_id từ URL (?news_id=5108)
     const urlParams = new URLSearchParams(window.location.search);
     const newsId = urlParams.get('news_id');
     const statusEl = document.getElementById('status');
 
     if (!newsId) {
-        statusEl.innerText = "❌ LỖI: Thiếu news_id trên URL! (Ví dụ: test.html?news_id=5108)";
+        statusEl.innerText = "❌ LỖI: Thiếu news_id! (Ví dụ: test.html?news_id=5108)";
         statusEl.style.background = "#ffebee";
         statusEl.style.color = "#c62828";
     }
@@ -57,7 +56,7 @@
                 window.echo = new EchoLibrary({
                     broadcaster: 'reverb',
                     key: 'abc123',
-                    wsHost: '192.168.1.43', // IP máy Khang
+                    wsHost: '192.168.20.25', // 👈 Đảm bảo IP này khớp với Server nhé Khang
                     wsPort: 8080,
                     forceTLS: false,
                     enabledTransports: ['ws', 'wss'],
@@ -67,70 +66,94 @@
                 statusEl.style.background = "#e8f5e9";
                 statusEl.style.color = "#2e7d32";
 
-                // --- LẮNG NGHE CHANNEL (QUAN TRỌNG: CÓ DẤU CHẤM) ---
-                window.echo.channel('comments.' + newsId) // 👈 Sửa chỗ này để khớp Backend
-                    .listen('.comment.create', (e) => {
-                        console.log("🔥 CREATE:", e);
-                        const comment = e.comment;
-                        const container = document.getElementById('comment-container');
-                        if (document.getElementById('empty-msg')) document.getElementById('empty-msg').remove();
+                const channel = window.echo.channel('comments.' + newsId);
 
-                        const name = comment.member_name || "Người dùng ẩn danh";
-                        const firstChar = name.charAt(0).toUpperCase();
+                // --- 1. LẮNG NGHE TẠO MỚI ---
+                channel.listen('.comment.create', (e) => {
+                    console.log("🔥 NHẬN COMMENT MỚI:", e);
+                    const comment = e.comment;
+                    const container = document.getElementById('comment-container');
+                    if (document.getElementById('empty-msg')) document.getElementById('empty-msg').remove();
 
-                        if (!comment.root_id) {
-                            const rootDiv = document.createElement('div');
-                            rootDiv.className = 'comment-root';
-                            rootDiv.id = `comment-wrapper-${comment._id}`;
-                            rootDiv.innerHTML = `
-                                <div class="comment-main">
-                                    <div class="avatar">${firstChar}</div>
-                                    <div class="content-box" id="box-${comment._id}">
-                                        <span class="user-name">${name}</span>
-                                        <div class="text" id="text-${comment._id}">${comment.content}</div>
-                                    </div>
+                    const c_id = comment.id || comment._id;
+                    const name = (comment.member && comment.member.full_name) ? comment.member.full_name : "Người dùng";
+                    const firstChar = name.charAt(0).toUpperCase();
+
+                    if (!comment.root_id) {
+                        const rootDiv = document.createElement('div');
+                        rootDiv.className = 'comment-root';
+                        rootDiv.id = `comment-wrapper-${c_id}`;
+                        rootDiv.innerHTML = `
+                            <div class="comment-main">
+                                <div class="avatar">${firstChar}</div>
+                                <div class="content-box" id="box-${c_id}">
+                                    <span class="user-name">${name}</span>
+                                    <div class="text" id="text-${c_id}">${comment.content}</div>
                                 </div>
-                                <div class="reply-list" id="replies-for-${comment._id}"></div>
+                            </div>
+                            <div class="reply-list" id="replies-for-${c_id}"></div>
+                        `;
+                        container.prepend(rootDiv);
+                    } else {
+                        const replyList = document.getElementById(`replies-for-${comment.root_id}`);
+                        if (replyList) {
+                            const replyDiv = document.createElement('div');
+                            replyDiv.className = 'reply-item';
+                            replyDiv.id = `comment-wrapper-${c_id}`;
+                            const tag = comment.reply_to_name ? `<span class="mention">@${comment.reply_to_name}</span>` : '';
+                            replyDiv.innerHTML = `
+                                <div class="reply-content" id="box-${c_id}">
+                                    <span class="user-name" style="display:inline;">${name}:</span>
+                                    ${tag}<span class="text" id="text-${c_id}">${comment.content}</span>
+                                </div>
                             `;
-                            container.prepend(rootDiv);
-                        } else {
-                            const replyList = document.getElementById(`replies-for-${comment.root_id}`);
-                            if (replyList) {
-                                const replyDiv = document.createElement('div');
-                                replyDiv.className = 'reply-item';
-                                replyDiv.id = `comment-wrapper-${comment._id}`;
-                                const tag = comment.reply_to_name ? `<span class="mention">@${comment.reply_to_name}</span>` : '';
-                                replyDiv.innerHTML = `
-                                    <div class="reply-content" id="box-${comment._id}">
-                                        <span class="user-name" style="display:inline;">${name}:</span>
-                                        ${tag}<span class="text" id="text-${comment._id}">${comment.content}</span>
-                                    </div>
-                                `;
-                                replyList.appendChild(replyDiv);
-                            }
+                            replyList.appendChild(replyDiv);
                         }
-                    })
-                    .listen('.comment.update', (e) => {
-                        const comment = e.comment;
-                        const textEl = document.getElementById(`text-${comment._id}`);
-                        const boxEl = document.getElementById(`box-${comment._id}`);
-                        if (textEl) {
-                            textEl.innerHTML = `${comment.content} <span class="edited-tag">(đã sửa)</span>`;
-                            if(boxEl) {
-                                boxEl.style.background = "#fff9c4";
-                                setTimeout(() => { boxEl.style.background = ""; }, 1500);
-                            }
+                    }
+                })
+                // --- 2. LẮNG NGHE CẬP NHẬT ---
+                .listen('.comment.update', (e) => {
+                    console.log("✏️ NHẬN LỆNH SỬA:", e);
+                    const comment = e.comment;
+                    const c_id = comment.id || comment._id;
+                    const textEl = document.getElementById(`text-${c_id}`);
+                    const boxEl = document.getElementById(`box-${c_id}`);
+                    if (textEl) {
+                        textEl.innerHTML = `${comment.content} <span class="edited-tag">(đã sửa)</span>`;
+                        if(boxEl) {
+                            boxEl.style.background = "#fff9c4";
+                            setTimeout(() => { boxEl.style.background = ""; }, 2000);
                         }
-                    })
-                    .listen('.comment.delete', (e) => {
-                        const targetEl = document.getElementById(`comment-wrapper-${e.comment._id}`);
-                        if (targetEl) {
-                            targetEl.style.opacity = "0";
-                            targetEl.style.transform = "translateX(50px)";
-                            setTimeout(() => { targetEl.remove(); }, 500);
-                        }
-                    });
+                    }
+                })
+                // --- 3. LẮNG NGHE XÓA ---
+                .listen('.comment.delete', (e) => {
+                    console.log("🗑️ NHẬN LỆNH XÓA:", e);
 
+                    // SỬA CHỖ NÀY: Lấy ID chuẩn từ Object comment
+                    const commentData = e.comment;
+                    const c_id = commentData.id || commentData._id || (typeof commentData === 'string' ? commentData : null);
+
+                    if (!c_id) {
+                        console.error("❌ Không tìm thấy ID để xóa!");
+                        return;
+                    }
+
+                    const targetEl = document.getElementById(`comment-wrapper-${c_id}`);
+
+                    if (targetEl) {
+                        targetEl.style.transition = "all 0.5s ease";
+                        targetEl.style.opacity = "0";
+                        targetEl.style.transform = "translateX(100px)";
+
+                        setTimeout(() => {
+                            targetEl.remove();
+                            console.log("✅ Đã xóa component trên giao diện:", c_id);
+                        }, 500);
+                    } else {
+                        console.warn("⚠️ Không tìm thấy HTML element có ID:", `comment-wrapper-${c_id}`);
+                    }
+                });
             } catch (error) {
                 statusEl.innerText = "❌ Lỗi: " + error.message;
             }

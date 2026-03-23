@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
@@ -19,7 +18,7 @@ class PostResource extends JsonResource
             "News: {$this->news_id}" => [
                 'cat_id'      => $this->cat_id,
                 'cat_list'    => $this->cat_list,
-                'picture'     => $this->picture,
+                'picture' => url('storage/' . $this->picture),
                 'focus'       => $this->focus,
                 'display'     => $this->display,
                 'focus_order' => $this->focus_order,
@@ -28,7 +27,7 @@ class PostResource extends JsonResource
                 'adminid'     => $this->adminid,
             ],
             //table News_Desc
-            'Detail' => [
+            'Detail'                 => [
                 'id'             => $this->newsDesc?->id,
                 'title'          => $this->newsDesc?->title,
                 'short'          => $this->newsDesc?->short,
@@ -38,7 +37,7 @@ class PostResource extends JsonResource
                 'metakey'        => $this->newsDesc?->metakey,
                 'metadesc'       => $this->newsDesc?->metadesc,
                 'lang'           => $this->newsDesc?->lang,
-            ]
+            ],
         ];
     }
 }

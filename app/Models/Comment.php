@@ -15,6 +15,10 @@ class Comment extends Model
         'content',
         'parent_id',
         'root_id',
+        'status'
+    ];
+    protected $attributes = [
+        'status' => 1,
     ];
     public function news()
     {
@@ -24,9 +28,11 @@ class Comment extends Model
     {
         return $this->belongsTo(Member::class, 'member_id', 'id');
     }
-    public function allReplies()
+    public function replies()
     {
-        return $this->hasMany(Comment::class, 'root_id', '_id')->with('member');
+        return $this->hasMany(Comment::class, 'root_id', '_id')
+            ->with('member')
+            ->orderBy('created_at', 'asc');
     }
 
     public $timestamps = true;

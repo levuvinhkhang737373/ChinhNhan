@@ -19,7 +19,7 @@ class CategoryNewsResource extends JsonResource
             'id'          => $this->cat_id,
             'cat_code'    => $this->cat_code,
             'parent_id'   => $this->parentid,
-            'picture'     => $this->picture ? asset($this->picture) : null,
+            'picture' => url('storage/' . $this->picture),
             'is_default'  => (int) $this->is_default,
             'show_home'   => (int) $this->show_home,
             'focus_order' => $this->focus_order,
@@ -28,7 +28,7 @@ class CategoryNewsResource extends JsonResource
             'display'     => (int) $this->display,
             'admin_id'    => $this->adminid,
 
-            
+
             'detail' => [
                 'id'             => $desc?->id,
                 'cat_id'         => $desc?->cat_id,

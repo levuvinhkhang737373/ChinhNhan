@@ -9,8 +9,8 @@ Route::get('/listcategory', [App\Http\Controllers\Member\CategoryNewsController:
 Route::get('/searchnews', [App\Http\Controllers\Member\PostController::class, 'searchNews']);
 Route::get('/news/top-interactive', [App\Http\Controllers\Member\PostController::class, 'TopInteractiveNewsPerCategory']);
 Route::get('/news/{friendly_url}', [App\Http\Controllers\Member\PostController::class, 'show']);
-
-
+Route::get('comment', [App\Http\Controllers\Member\CommentController::class, 'index']);
+Route::get('comment/{id}', [App\Http\Controllers\Member\CommentController::class, 'show']);
 //---------------------------------------Auth Member
 Route::post('/member/login', [App\Http\Controllers\Member\MemberController::class, 'login']);
 Route::post('/member/forgot-password', [App\Http\Controllers\Member\MemberController::class, 'forgotpassword']);
@@ -24,7 +24,9 @@ Route::middleware('auth:member')->prefix('member')->group(function () {
     Route::get('/notifications/unread-count', [App\Http\Controllers\Member\NotificationContronler::class, 'getUnreadCount']);
     Route::get('/notifications', [App\Http\Controllers\Member\NotificationContronler::class, 'index']);
     Route::post('/notifications/{id}/mark-as-read', [App\Http\Controllers\Member\NotificationContronler::class, 'markAsRead']);
-    Route::resource('comment', App\Http\Controllers\Member\CommentController::class);
+    Route::post('comment', [App\Http\Controllers\Member\CommentController::class, 'store']);
+    Route::put('comment/{id}', [App\Http\Controllers\Member\CommentController::class, 'update']);
+    Route::delete('comment/{id}', [App\Http\Controllers\Member\CommentController::class, 'destroy']);
 });
 
 //--------------------------------------- Admin ---------------------------------------
@@ -50,4 +52,6 @@ Route::middleware(['auth:admin', CheckAdmin::class])->prefix('admin')->group(fun
     Route::resource('banner', App\Http\Controllers\Admin\BannerController::class);
     //----------------------Footer
     Route::resource('footer', App\Http\Controllers\Admin\FooterController::class);
+    //----------------------Comment
+       Route::put('/comment-update', [App\Http\Controllers\Admin\CommentController::class, 'update']);
 });

@@ -24,7 +24,6 @@ class CommentCreated implements ShouldBroadcast
     }
     public function broadcastAs(): string
     {
-
         return 'comment.create';
     }
 }
