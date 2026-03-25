@@ -46,6 +46,8 @@ class Member extends Authenticatable
         'district',
         'city_province',
         'password_token',
+        'google_id'
+
     ];
 
     protected $hidden = [

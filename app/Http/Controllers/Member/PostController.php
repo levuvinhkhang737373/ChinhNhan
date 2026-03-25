@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PostResource;
 use App\Models\News;
 use App\Models\NewsDesc;
+use App\Models\Post;
 use App\Models\StatisticsPages;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -29,14 +30,25 @@ class PostController extends Controller
                     'last_page'    => $posts->lastPage(),
                     'per_page'     => $posts->perPage(),
                     'total'        => $posts->total(),
-                ], PostResource::collection($posts)], 200);
+                ],
+                'posts'      => PostResource::collection($posts),
+            ], 200);
         } catch (\Exception $e) {
             report($e);
             return $this->responseJson(false, "Server Error: " . $e->getMessage(), 500, "", 500);
         }
     }
+    // public function show($id)
+    // {
+    //     try {
+    //         $post = Post::find($id);
+    //         return $this->responseJson(true, "Chi Tiết Bài Viết", 200, $post, 200);
 
-    public function show($friendly_url, Request $request)
+    //     } catch (\Exception $e) {
+    //         return $this->responseJson(false, 'Có lỗi hệ thống' . $e->getMessage(), 500, "", 500);
+    //     }
+    // }
+   public function show( $friendly_url, Request $request)
     {
         try {
             $bearerToken = $request->bearerToken();

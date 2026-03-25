@@ -14,7 +14,7 @@ class CategoryNewsController extends Controller
         try {
             $category = NewsCategory::where('display', 1)
                 ->with('newsCategoryDesc')
-                ->paginate(10);
+                ->get();
             return $this->responseJson(true, "Danh sách category", 200, CategoryNewsResource::collection($category), 200);
         } catch (\Exception $e) {
             report($e);

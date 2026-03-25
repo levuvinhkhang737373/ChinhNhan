@@ -9,10 +9,12 @@ Route::get('/listcategory', [App\Http\Controllers\Member\CategoryNewsController:
 Route::get('/searchnews', [App\Http\Controllers\Member\PostController::class, 'searchNews']);
 Route::get('/news/top-interactive', [App\Http\Controllers\Member\PostController::class, 'TopInteractiveNewsPerCategory']);
 Route::get('/news/{friendly_url}', [App\Http\Controllers\Member\PostController::class, 'show']);
+
 Route::get('comment', [App\Http\Controllers\Member\CommentController::class, 'index']);
 Route::get('comment/{id}', [App\Http\Controllers\Member\CommentController::class, 'show']);
 //---------------------------------------Auth Member
 Route::post('/member/login', [App\Http\Controllers\Member\MemberController::class, 'login']);
+Route::post('/member/google-login', [App\Http\Controllers\Member\AuthGoogleController::class, 'verifyGoogleToken']);
 Route::post('/member/forgot-password', [App\Http\Controllers\Member\MemberController::class, 'forgotpassword']);
 Route::post('/member/reset-password', [App\Http\Controllers\Member\MemberController::class, 'resetpassword']);
 Route::post('/member/register', [App\Http\Controllers\Member\MemberController::class, 'register']);

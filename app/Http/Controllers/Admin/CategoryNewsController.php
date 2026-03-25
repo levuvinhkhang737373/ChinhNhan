@@ -48,7 +48,7 @@ class CategoryNewsController extends Controller
                 $cat = NewsCategory::create([
                     'cat_code'    => $data['cat_code'] ?? null,
                     'parentid'    => $data['parentid'] ?? 0,
-                    'picture'     => $data['picture'],
+                    'picture'     => $data['picture'] ?? null,
                     'is_default'  => $data['is_default'] ?? 0,
                     'show_home'   => $data['show_home'] ?? 0,
                     'focus_order' => $data['focus_order'] ?? 0,

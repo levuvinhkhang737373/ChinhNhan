@@ -39,7 +39,7 @@ class StoreCategoryNewsRequest extends FormRequest
     public function messages(): array
     {
         return [
-           
+
             'cat_code.max' => 'Mã category không được vượt quá 150 ký tự',
             'cat_code.unique' => 'Mã category đã tồn tại',
             'parentid.integer' => 'Danh mục cha không hợp lệ',
